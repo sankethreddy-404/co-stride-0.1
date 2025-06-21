@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+---
+
+**Rule: Plan-First, Change-Later**
+
+The agent must **not make any direct code changes upfront**. Instead, it must first generate a **clear and structured plan of action** detailing:
+
+1. **What** changes are proposed.  
+2. **Where** those changes will happen (specific files, functions, components, etc.).  
+3. **Why** those changes are needed (brief context or reasoning).  
+4. **How** those changes will be implemented (can include pseudo-code or outline of logic).
+
+**Only after the user explicitly approves the plan**, the agent is allowed to proceed with making the actual code changes.
+
+Until approval is given, the agent must operate in a **read-only advisory mode** — no touching the code.
+
+Do not fucking write code unless you fucking get a approval from the user for the fucking plan
+
+---
