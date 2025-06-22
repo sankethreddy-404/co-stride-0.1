@@ -1,10 +1,18 @@
 import {createServerClient} from '@supabase/ssr'
-import {cookies} from 'next/headers'
 import {ClientType, SassClient} from "@/lib/supabase/unified";
 import {Database} from "@/lib/types";
+import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 
-export async function createSSRClient() {
-    const cookieStore = await cookies()
+export async function createSSRClient(cookiesFn?: () => Promise<ReadonlyRequestCookies>) {
+    let cookieStore: ReadonlyRequestCookies;
+    
+    if (cookiesFn) {
+        cookieStore = await cookiesFn();
+    } else {
+        // Fallback for when cookies function is not provided
+        const { cookies } = await import('next/headers');
+        cookieStore = await cookies();
+    }
 
     return createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +40,7 @@ export async function createSSRClient() {
 
 
 
-export async function createSSRSassClient() {
-    const client = await createSSRClient();
+export async function createSSRSassClient(cookiesFn?: () => Promise<ReadonlyRequestCookies>) {
+    const client = await createSSRClient(cookiesFn);
     return new SassClient(client, ClientType.SERVER);
 }

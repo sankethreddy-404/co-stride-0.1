@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createSSRSassClient } from "@/lib/supabase/server";
 import { createServerAdminClient } from "@/lib/supabase/serverAdminClient";
 import { EmailService } from "@/lib/email/resend";
@@ -40,7 +41,7 @@ export async function POST(
     }
 
     // Verify user is authenticated and owns the workspace
-    const supabase = await createSSRSassClient();
+    const supabase = await createSSRSassClient(cookies);
     const adminClient = await createServerAdminClient();
     const {
       data: { user },
@@ -298,7 +299,7 @@ export async function DELETE(
     }
 
     // Verify user is authenticated and owns the workspace
-    const supabase = await createSSRSassClient();
+    const supabase = await createSSRSassClient(cookies);
     const {
       data: { user },
       error: authError,
