@@ -17,6 +17,10 @@ export default function UserSettingsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const handleError = (error: string) => {
+    setError(error);
+  };
+
   return (
     <div className="space-y-6 p-6">
       <div className="space-y-2">
@@ -77,6 +81,7 @@ export default function UserSettingsPage() {
           </Card>
 
           <MFASetup
+            onError={handleError}
             onStatusChange={() => {
               setSuccess(
                 "Two-factor authentication settings updated successfully"

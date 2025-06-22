@@ -444,10 +444,17 @@ export class SassClient {
 
   // Rating methods
   async ratePost(postId: string, rating: number) {
+    const {
+      data: { user },
+    } = await this.client.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
     return this.client.from("ratings").upsert(
       {
         post_id: postId,
         rating_value: rating,
+        user_id: user.id,
       },
       {
         onConflict: "post_id,user_id",
