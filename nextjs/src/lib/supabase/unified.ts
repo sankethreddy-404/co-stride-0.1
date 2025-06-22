@@ -33,16 +33,22 @@ export class SassClient {
   }
 
   async signInWithGoogle(redirectTo?: string) {
-    const redirectUrl = redirectTo || `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'}/api/auth/callback`;
-    
+    const redirectUrl =
+      redirectTo ||
+      `${
+        typeof window !== "undefined"
+          ? window.location.origin
+          : "http://localhost:3000"
+      }/api/auth/callback`;
+
     return this.client.auth.signInWithOAuth({
-      provider: 'google',
+      provider: "google",
       options: {
         redirectTo: redirectUrl,
         queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        }
+          access_type: "offline",
+          prompt: "consent",
+        },
       },
     });
   }
