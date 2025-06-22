@@ -1,5 +1,6 @@
 // src/app/api/auth/callback/route.ts
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createSSRSassClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -7,7 +8,8 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
 
   if (code) {
-    const supabase = await createSSRSassClient();
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     const client = supabase.getSupabaseClient();
 
     // Exchange the code for a session

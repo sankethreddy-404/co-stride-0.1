@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createSSRSassClient } from "@/lib/supabase/server";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
@@ -26,7 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user is authenticated and has access to workspace
-    const supabase = await createSSRSassClient();
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     const {
       data: { user },
       error: authError,

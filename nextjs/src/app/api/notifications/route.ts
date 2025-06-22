@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createSSRSassClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -18,7 +19,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const supabase = await createSSRSassClient();
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     
     // Create notification
     const { data: notification, error } = await supabase.getSupabaseClient()

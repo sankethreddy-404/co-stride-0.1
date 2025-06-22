@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createSSRSassClient } from '@/lib/supabase/server';
 import { invitationEmailQueue } from '@/lib/email/invitation-queue';
 
 export async function GET(request: NextRequest) {
   try {
     // Verify admin access (you might want to implement proper admin authentication)
-    const supabase = await createSSRSassClient();
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     const { data: { user }, error: authError } = await supabase.getSupabaseClient().auth.getUser();
 
     if (authError || !user) {
@@ -32,7 +34,8 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Verify admin access
-    const supabase = await createSSRSassClient();
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     const { data: { user }, error: authError } = await supabase.getSupabaseClient().auth.getUser();
 
     if (authError || !user) {
