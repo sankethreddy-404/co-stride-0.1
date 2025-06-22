@@ -3,15 +3,15 @@ import {ClientType, SassClient} from "@/lib/supabase/unified";
 import {Database} from "@/lib/types";
 import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adapters/request-cookies';
 
-export async function createSSRClient(cookiesFn?: () => Promise<ReadonlyRequestCookies>) {
-    let cookieStore: ReadonlyRequestCookies;
+export async function createSSRClient(cookieStore?: ReadonlyRequestCookies) {
+    let cookies: ReadonlyRequestCookies;
     
-    if (cookiesFn) {
-        cookieStore = await cookiesFn();
+    if (cookieStore) {
+        cookies = cookieStore;
     } else {
-        // Fallback for when cookies function is not provided
-        const { cookies } = await import('next/headers');
-        cookieStore = await cookies();
+        // Fallback for when cookie store is not provided
+        const { cookies: getCookies } = await import('next/headers');
+        cookies = await getCookies();
     }
 
     return createServerClient<Database>(
@@ -20,12 +20,12 @@ export async function createSSRClient(cookiesFn?: () => Promise<ReadonlyRequestC
         {
             cookies: {
                 getAll() {
-                    return cookieStore.getAll()
+                    return cookies.getAll()
                 },
                 setAll(cookiesToSet) {
                     try {
                         cookiesToSet.forEach(({ name, value, options }) =>
-                            cookieStore.set(name, value, options)
+                            cookies.set(name, value, options)
                         )
                     } catch {
                         // The `setAll` method was called from a Server Component.
@@ -38,9 +38,7 @@ export async function createSSRClient(cookiesFn?: () => Promise<ReadonlyRequestC
     )
 }
 
-
-
-export async function createSSRSassClient(cookiesFn?: () => Promise<ReadonlyRequestCookies>) {
-    const client = await createSSRClient(cookiesFn);
+export async function createSSRSassClient(cookieStore?: ReadonlyRequestCookies) {
+    const client = await createSSRClient(cookieStore);
     return new SassClient(client, ClientType.SERVER);
 }

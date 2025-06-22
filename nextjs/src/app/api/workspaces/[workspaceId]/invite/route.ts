@@ -41,7 +41,8 @@ export async function POST(
     }
 
     // Verify user is authenticated and owns the workspace
-    const supabase = await createSSRSassClient(cookies);
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     const adminClient = await createServerAdminClient();
     const {
       data: { user },
@@ -299,7 +300,8 @@ export async function DELETE(
     }
 
     // Verify user is authenticated and owns the workspace
-    const supabase = await createSSRSassClient(cookies);
+    const cookieStore = await cookies();
+    const supabase = await createSSRSassClient(cookieStore);
     const {
       data: { user },
       error: authError,
