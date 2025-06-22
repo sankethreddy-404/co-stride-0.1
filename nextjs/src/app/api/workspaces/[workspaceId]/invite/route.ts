@@ -4,7 +4,6 @@ import { createSSRSassClient } from "@/lib/supabase/server";
 import { createServerAdminClient } from "@/lib/supabase/serverAdminClient";
 import { EmailService } from "@/lib/email/resend";
 import { invitationRateLimiter } from "@/lib/rate-limiting/invitation-rate-limiter";
-import { EmailTemplates } from "@/lib/email/templates";
 
 interface InvitationResult {
   success: boolean;
@@ -30,11 +29,11 @@ export async function POST(
 
     if (!email) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           message: "Email is required",
           email_method: "validation_error",
-          email_sent: false
+          email_sent: false,
         },
         { status: 400 }
       );
@@ -51,11 +50,11 @@ export async function POST(
 
     if (authError || !user) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           message: "Unauthorized",
           email_method: "auth_error",
-          email_sent: false
+          email_sent: false,
         },
         { status: 401 }
       );
@@ -63,7 +62,8 @@ export async function POST(
 
     // Check rate limiting (per user)
     const rateLimitIdentifier = user.id;
-    const rateLimitResult = invitationRateLimiter.checkRateLimit(rateLimitIdentifier);
+    const rateLimitResult =
+      invitationRateLimiter.checkRateLimit(rateLimitIdentifier);
 
     if (!rateLimitResult.allowed) {
       const resetDate = new Date(rateLimitResult.resetTime);
@@ -92,11 +92,11 @@ export async function POST(
 
     if (workspaceError || !workspace || workspace.owner_id !== user.id) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           message: "Forbidden - You don't own this workspace",
           email_method: "permission_error",
-          email_sent: false
+          email_sent: false,
         },
         { status: 403 }
       );
@@ -118,11 +118,11 @@ export async function POST(
 
       if (existingMember) {
         return NextResponse.json(
-          { 
+          {
             success: false,
             message: "User is already a member of this workspace",
             email_method: "already_member",
-            email_sent: false
+            email_sent: false,
           },
           { status: 400 }
         );
@@ -189,16 +189,19 @@ export async function POST(
     try {
       // Check if Resend is configured
       if (!process.env.RESEND_API_KEY) {
-        console.warn('RESEND_API_KEY not configured, falling back to Supabase email');
-        
+        console.warn(
+          "RESEND_API_KEY not configured, falling back to Supabase email"
+        );
+
         // Fallback to Supabase email
-        const { error: emailError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-          redirectTo: inviteUrl,
-          data: {
-            workspace_id: workspaceId,
-            invitation_token: invitation.invitation_token,
-          },
-        });
+        const { error: emailError } =
+          await adminClient.auth.admin.inviteUserByEmail(email, {
+            redirectTo: inviteUrl,
+            data: {
+              workspace_id: workspaceId,
+              invitation_token: invitation.invitation_token,
+            },
+          });
 
         if (emailError) {
           console.log(`Supabase email error for ${email}:`, emailError.message);
@@ -211,29 +214,17 @@ export async function POST(
       } else {
         // Use Resend for email delivery
         const emailService = new EmailService();
-        const emailData = {
-          workspaceName: workspace.name,
-          inviterEmail: user.email || 'Unknown',
-          inviteUrl,
-          invitedEmail: email,
-          expirationDate: new Date(invitation.expires_at).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          }),
-        };
 
         const emailResult = await emailService.sendInvitationEmail(
           email,
           workspace.name,
-          user.email || 'Unknown',
+          user.email || "Unknown",
           inviteUrl
         );
 
         if (emailResult.success) {
           emailSent = true;
           emailMethod = "resend";
-          console.log(`Invitation email sent via Resend to: ${email}, Message ID: ${emailResult.messageId}`);
         } else {
           emailSent = false;
           emailMethod = "resend_error";
@@ -272,12 +263,12 @@ export async function POST(
   } catch (error) {
     console.error("Error sending invitation:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         message: "Failed to send invitation",
         email_method: "server_error",
         email_sent: false,
-        error: error instanceof Error ? error.message : "Unknown error"
+        error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

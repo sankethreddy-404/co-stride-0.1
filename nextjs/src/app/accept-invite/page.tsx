@@ -31,32 +31,38 @@ function AcceptInviteContent() {
     try {
       const supabase = await createSPASassClient();
 
-      // First try to get invitation details regardless of expiration
       const { data: invitationData, error: invitationError } = await supabase
         .getSupabaseClient()
         .from("invitations")
-        .select(
-          `
-                    *,
-                    workspaces(name)
-                `
-        )
+        .select("*")
         .eq("invitation_token", token)
         .single();
 
       if (invitationError || !invitationData) {
-        setError("Invalid invitation link");
+        console.error("❌ Invitation not found:", invitationError);
+
+        setError("Invitation not found. This link may be invalid or expired.");
         setLoading(false);
         return;
       }
 
-      // Check if invitation is expired or not pending
+      const { data: workspaceData, error: workspaceError } = await supabase
+        .getSupabaseClient()
+        .from("workspaces")
+        .select("*")
+        .eq("id", invitationData.workspace_id)
+        .single();
+
+      if (workspaceError) {
+        console.warn("⚠️ Could not fetch workspace data:", workspaceError);
+      }
+
       const isExpired = new Date(invitationData.expires_at) < new Date();
       const isNotPending = invitationData.status !== "pending";
 
       if (isExpired || isNotPending) {
         setInvitation(invitationData);
-        setWorkspace(invitationData.workspaces);
+        setWorkspace(workspaceData);
         setRequestLinkEmail(invitationData.invited_email);
 
         if (isExpired) {
@@ -84,12 +90,11 @@ function AcceptInviteContent() {
         return;
       }
 
-      // Invitation is valid
       setInvitation(invitationData);
-      setWorkspace(invitationData.workspaces);
+      setWorkspace(workspaceData);
       setLoading(false);
     } catch (err) {
-      console.error("Error verifying invitation:", err);
+      console.error("💥 Error verifying invitation:", err);
       setError("Failed to verify invitation");
       setLoading(false);
     }
@@ -100,15 +105,18 @@ function AcceptInviteContent() {
       setProcessingAction("accept");
       setError("");
 
+      if (!invitation) {
+        setError("Invalid invitation - please try again");
+        return;
+      }
+
       const supabase = await createSPASassClient();
 
-      // Check if user is authenticated
       const {
         data: { user },
       } = await supabase.getSupabaseClient().auth.getUser();
 
       if (!user) {
-        // User not authenticated - redirect to login with return URL
         const returnUrl = encodeURIComponent(window.location.href);
         router.push(
           `/auth/login?returnUrl=${returnUrl}&message=Please log in to accept this invitation`
@@ -116,8 +124,7 @@ function AcceptInviteContent() {
         return;
       }
 
-      // User is authenticated - proceed with accepting invitation
-      await joinWorkspace(invitation!.workspace_id, invitation!.id);
+      await joinWorkspace(invitation.workspace_id, invitation.id);
     } catch (err) {
       console.error("Error accepting invitation:", err);
       setError("Failed to accept invitation");
@@ -131,11 +138,15 @@ function AcceptInviteContent() {
       setProcessingAction("reject");
       setError("");
 
+      if (!invitation) {
+        setError("Invalid invitation - please try again");
+        return;
+      }
+
       const supabase = await createSPASassClient();
 
-      // Update invitation status to declined - no auth required for rejection
       const { error: invitationError } = await supabase.updateInvitationStatus(
-        invitation!.id,
+        invitation.id,
         "declined"
       );
 
@@ -158,8 +169,13 @@ function AcceptInviteContent() {
       setProcessingAction("request_link");
       setError("");
 
-      if (!requestLinkEmail || !invitation?.workspace_id) {
-        setError("Missing required information to request new link");
+      if (!requestLinkEmail) {
+        setError("Email address is required to request new link");
+        return;
+      }
+
+      if (!invitation?.workspace_id) {
+        setError("Invalid invitation - cannot request new link");
         return;
       }
 
@@ -187,7 +203,6 @@ function AcceptInviteContent() {
       } else {
         setError("");
         setSuccess(true);
-        // Show success message instead of redirecting
       }
     } catch (err) {
       console.error("Error requesting new link:", err);
@@ -203,10 +218,9 @@ function AcceptInviteContent() {
     if (token) {
       verifyInvitation();
     } else {
-      setError("Invalid invitation link");
+      setError("Invalid invitation link - missing token");
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const joinWorkspace = async (workspaceId: string, invitationId: string) => {
@@ -221,14 +235,12 @@ function AcceptInviteContent() {
         return;
       }
 
-      // Add user to workspace
       const { error: memberError } = await supabase.joinWorkspace(
         workspaceId,
         user.id
       );
       if (memberError) throw memberError;
 
-      // Update invitation status
       const { error: invitationError } = await supabase.updateInvitationStatus(
         invitationId,
         "accepted"
@@ -333,11 +345,11 @@ function AcceptInviteContent() {
             </p>
 
             {/* Show accept/reject buttons only for valid invitations */}
-            {!showRequestLink && (
+            {!showRequestLink && invitation && (
               <div className="space-y-3">
                 <Button
                   onClick={handleAcceptInvitation}
-                  disabled={processingAction !== null}
+                  disabled={processingAction !== null || !invitation}
                   className="w-full bg-green-600 text-white hover:bg-green-700"
                 >
                   {processingAction === "accept" && (
@@ -348,7 +360,7 @@ function AcceptInviteContent() {
 
                 <Button
                   onClick={handleRejectInvitation}
-                  disabled={processingAction !== null}
+                  disabled={processingAction !== null || !invitation}
                   variant="outline"
                   className="w-full border-red-300 text-red-600 hover:bg-red-50"
                 >
@@ -361,11 +373,13 @@ function AcceptInviteContent() {
             )}
 
             {/* Show request new link button for expired/cancelled invitations */}
-            {showRequestLink && (
+            {showRequestLink && invitation && (
               <div className="space-y-3">
                 <Button
                   onClick={handleRequestNewLink}
-                  disabled={processingAction !== null}
+                  disabled={
+                    processingAction !== null || !invitation?.workspace_id
+                  }
                   className="w-full bg-blue-600 text-white hover:bg-blue-700"
                 >
                   {processingAction === "request_link" && (
