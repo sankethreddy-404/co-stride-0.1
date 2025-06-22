@@ -1,6 +1,7 @@
 "use client";
 
 import { createSPASassClient } from "@/lib/supabase/client";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function RegisterPage() {
@@ -71,29 +72,29 @@ export default function RegisterPage() {
 
       <div className="mt-6 text-center text-sm text-gray-500">
         Already have an account?{" "}
-        <a
+        <Link
           href="/auth/login"
           className="text-primary-600 hover:text-primary-500 underline"
         >
           Sign in
-        </a>
+        </Link>
       </div>
 
       <div className="mt-4 text-center text-xs text-gray-500">
         By creating an account, you agree to our{" "}
-        <a
+        <Link
           href="/legal/terms"
           className="text-primary-600 hover:text-primary-500 underline"
         >
           Terms of Service
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a
+        <Link
           href="/legal/privacy"
           className="text-primary-600 hover:text-primary-500 underline"
         >
           Privacy Policy
-        </a>
+        </Link>
       </div>
     </div>
   );

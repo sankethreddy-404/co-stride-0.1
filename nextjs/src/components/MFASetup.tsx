@@ -18,9 +18,10 @@ interface MFAEnrollTOTPParams {
 
 interface MFASetupProps {
   onStatusChange?: () => void;
+  onError?: (error: string) => void;
 }
 
-export function MFASetup({ onStatusChange }: MFASetupProps) {
+export function MFASetup({ onStatusChange, onError }: MFASetupProps) {
   const [factors, setFactors] = useState<Factor[]>([]);
   const [step, setStep] = useState<"list" | "name" | "enroll">("list");
   const [factorId, setFactorId] = useState("");
@@ -43,8 +44,7 @@ export function MFASetup({ onStatusChange }: MFASetupProps) {
       setFactors(data.all || []);
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching MFA factors:", err);
-      setError(
+      onError?.(
         err instanceof Error ? err.message : "Failed to fetch MFA status"
       );
       setLoading(false);
@@ -81,7 +81,7 @@ export function MFASetup({ onStatusChange }: MFASetupProps) {
       setQR(data.totp.qr_code);
       setStep("enroll");
     } catch (err) {
-      setError(
+      onError?.(
         err instanceof Error ? err.message : "Failed to start MFA enrollment"
       );
       setStep("name");
@@ -112,7 +112,7 @@ export function MFASetup({ onStatusChange }: MFASetupProps) {
       resetEnrollment();
       onStatusChange?.();
     } catch (err) {
-      setError(
+      onError?.(
         err instanceof Error ? err.message : "Failed to verify MFA code"
       );
     } finally {
@@ -135,7 +135,7 @@ export function MFASetup({ onStatusChange }: MFASetupProps) {
       await fetchFactors();
       onStatusChange?.();
     } catch (err) {
-      setError(
+      onError?.(
         err instanceof Error ? err.message : "Failed to unenroll MFA factor"
       );
     } finally {

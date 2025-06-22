@@ -2,16 +2,15 @@
 "use client";
 
 import { createSPASassClient } from "@/lib/supabase/client";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 
 function LoginContent() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get("returnUrl");
   const message = searchParams.get("message");
 
   const handleGoogleLogin = async () => {
@@ -80,19 +79,19 @@ function LoginContent() {
 
       <div className="mt-6 text-center text-sm text-gray-500">
         By signing in, you agree to our{" "}
-        <a
+        <Link
           href="/legal/terms"
           className="text-primary-600 hover:text-primary-500 underline"
         >
           Terms of Service
-        </a>{" "}
+        </Link>{" "}
         and{" "}
-        <a
+        <Link
           href="/legal/privacy"
           className="text-primary-600 hover:text-primary-500 underline"
         >
           Privacy Policy
-        </a>
+        </Link>
       </div>
     </div>
   );
