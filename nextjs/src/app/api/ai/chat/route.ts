@@ -44,24 +44,36 @@ export async function POST(request: NextRequest) {
     // Create new session if requested or if no session provided
     if (createNewSession || !currentSessionId) {
       console.log("Creating new session for user:", user.id);
+      
       const { data: newSession, error: sessionError } = await supabase.createChatSession(user.id);
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        console.error("Session creation error:", sessionError);
+        throw sessionError;
+      }
       console.log("New session created:", newSession.id);
       currentSessionId = newSession.id;
     }
 
     // Save user message
     console.log("Saving user message to session:", currentSessionId);
-    await supabase.createChatMessage(
+    const { error: messageError } = await supabase.createChatMessage(
       currentSessionId,
       user.id,
       "user",
       message
     );
+    
+    if (messageError) {
+      console.error("Message creation error:", messageError);
+      throw messageError;
+    }
 
     // Get chat history for context
     const { data: messages, error: messagesError } = await supabase.getChatMessages(currentSessionId);
-    if (messagesError) throw messagesError;
+    if (messagesError) {
+      console.error("Messages retrieval error:", messagesError);
+      throw messagesError;
+    }
 
     // Prepare conversation history for AI
     const conversationHistory = messages.map(msg => ({
