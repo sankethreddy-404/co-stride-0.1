@@ -624,4 +624,69 @@ export class SassClient {
   getSupabaseClient() {
     return this.client;
   }
+
+  // Chat methods
+  async createChatSession(userId: string) {
+    return this.client
+      .from("chat_sessions")
+      .insert({
+        user_id: userId,
+      })
+      .select()
+      .single();
+  }
+
+  async getChatSessions(userId: string) {
+    return this.client
+      .from("chat_sessions")
+      .select("*")
+      .eq("user_id", userId)
+      .order("updated_at", { ascending: false });
+  }
+
+  async updateChatSessionTitle(sessionId: string, title: string) {
+    return this.client
+      .from("chat_sessions")
+      .update({ title, updated_at: new Date().toISOString() })
+      .eq("id", sessionId);
+  }
+
+  async createChatMessage(
+    sessionId: string,
+    userId: string,
+    senderType: "user" | "ai" | "tool_call" | "tool_output",
+    messageContent: string,
+    toolName?: string,
+    toolArgs?: object,
+    toolOutput?: string
+  ) {
+    return this.client
+      .from("chat_messages")
+      .insert({
+        session_id: sessionId,
+        user_id: userId,
+        sender_type: senderType,
+        message_content: messageContent,
+        tool_name: toolName,
+        tool_args: toolArgs,
+        tool_output: toolOutput,
+      })
+      .select()
+      .single();
+  }
+
+  async getChatMessages(sessionId: string) {
+    return this.client
+      .from("chat_messages")
+      .select("*")
+      .eq("session_id", sessionId)
+      .order("created_at", { ascending: true });
+  }
+
+  async deleteChatSession(sessionId: string) {
+    return this.client
+      .from("chat_sessions")
+      .delete()
+      .eq("id", sessionId);
+  }
 }

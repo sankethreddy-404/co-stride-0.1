@@ -15,6 +15,7 @@ import {
   Search,
   Bell,
   Settings,
+  Brain,
 } from "lucide-react";
 import { useGlobal } from "@/lib/context/GlobalContext";
 import { createSPASassClient } from "@/lib/supabase/client";
@@ -52,6 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const navigation = [
     { name: "Dashboard", href: "/app", icon: Home },
     { name: "Workspaces", href: "/app/workspaces", icon: Users },
+    { name: "AI Chat", href: "/app/ai-chat", icon: Brain },
     { name: "Search", href: "/app/search", icon: Search },
     { name: "Notifications", href: "/app/notifications", icon: Bell },
     { name: "Profile", href: "/app/profile", icon: User },
