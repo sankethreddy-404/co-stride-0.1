@@ -224,21 +224,6 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
-                        onClick={(e) => {
-                          // Check if URL might be expired (contains expired token error)
-                          if (
-                            (
-                              attachment.url ||
-                              attachment.file_url ||
-                              ""
-                            ).includes("token=")
-                          ) {
-                            e.preventDefault();
-                            alert(
-                              "This file link has expired. Please ask the author to re-share the file."
-                            );
-                          }
-                        }}
                       >
                         <FileText className="h-4 w-4 text-gray-500" />
                         <span className="text-sm">{attachment.filename}</span>
