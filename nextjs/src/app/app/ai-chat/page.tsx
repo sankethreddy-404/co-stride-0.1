@@ -15,7 +15,7 @@ import {
   Loader2,
   User,
   Bot,
-  Tool,
+  Wrench,
   Trash2,
   BarChart3,
 } from "lucide-react";
@@ -239,7 +239,7 @@ export default function AIChatPage() {
             {isUser ? (
               <User className="w-4 h-4" />
             ) : isToolCall || isToolOutput ? (
-              <Tool className="w-4 h-4" />
+              <Wrench className="w-4 h-4" />
             ) : (
               <Bot className="w-4 h-4" />
             )}
