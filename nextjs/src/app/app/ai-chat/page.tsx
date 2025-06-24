@@ -121,7 +121,8 @@ export default function AIChatPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create new session");
+        console.error("API Error:", data);
+        throw new Error(data.details || data.error || "Failed to create new session");
       }
 
       // Reload sessions and select the new one
@@ -181,7 +182,8 @@ export default function AIChatPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send message");
+        console.error("API Error:", data);
+        throw new Error(data.details || data.error || "Failed to send message");
       }
 
       // Update current session if a new one was created
@@ -196,7 +198,7 @@ export default function AIChatPage() {
       }
     } catch (err) {
       console.error("Error sending message:", err);
-      setError("Failed to send message");
+      setError(`Failed to send message: ${err instanceof Error ? err.message : String(err)}`);
       setNewMessage(messageText); // Restore the message
     } finally {
       setSending(false);

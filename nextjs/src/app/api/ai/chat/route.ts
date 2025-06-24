@@ -16,7 +16,8 @@ const summarizePostsTool = tool({
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId, message, createNewSession } = await request.json();
+    const body = await request.json();
+    const { sessionId, message, createNewSession } = body;
 
     if (!message) {
       return NextResponse.json(
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.getSupabaseClient().auth.getUser();
 
     if (authError || !user) {
+      console.error("Auth error:", authError);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -41,12 +43,15 @@ export async function POST(request: NextRequest) {
 
     // Create new session if requested or if no session provided
     if (createNewSession || !currentSessionId) {
+      console.log("Creating new session for user:", user.id);
       const { data: newSession, error: sessionError } = await supabase.createChatSession(user.id);
       if (sessionError) throw sessionError;
+      console.log("New session created:", newSession.id);
       currentSessionId = newSession.id;
     }
 
     // Save user message
+    console.log("Saving user message to session:", currentSessionId);
     await supabase.createChatMessage(
       currentSessionId,
       user.id,
@@ -200,8 +205,12 @@ Be conversational and supportive in your response.`,
     });
   } catch (error) {
     console.error("Error in chat API:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: "Failed to process chat message" },
+      { 
+        error: "Failed to process chat message", 
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }
