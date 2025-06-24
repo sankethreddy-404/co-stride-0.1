@@ -112,14 +112,20 @@ export default function WorkspaceSettingsPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.message?.includes("already sent") || data.message?.includes("already valid")) {
+        if (
+          data.message?.includes("already sent") ||
+          data.message?.includes("already valid")
+        ) {
           setError(
-            data.message || "A new invitation is already pending. Please check your email."
+            data.message ||
+              "A new invitation is already pending. Please check your email."
           );
         } else if (data.message?.includes("Rate limit")) {
           setError(data.message);
         } else {
-          throw new Error(data.message || data.error || "Failed to request new link");
+          throw new Error(
+            data.message || data.error || "Failed to request new link"
+          );
         }
       } else {
         setError("");
