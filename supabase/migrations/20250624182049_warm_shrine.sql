@@ -1,0 +1,2 @@
+-- This migration is no longer needed - removing unnecessary users table creation
+-- The chat tables correctly reference auth.users(id) directly

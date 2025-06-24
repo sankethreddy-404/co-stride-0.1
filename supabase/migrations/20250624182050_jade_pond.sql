@@ -1,0 +1,1 @@
+-- This migration is no longer needed - the original chat tables were correct
