@@ -49,6 +49,26 @@ export async function POST(request: NextRequest) {
       );
       if (error) throw error;
       currentSessionId = newSession.id;
+
+      // Generate title from the first message
+      try {
+        const titleResponse = await generateText({
+          model: openai("gpt-4o"),
+          messages: [{ role: "user", content: message }],
+          maxTokens: 50,
+          temperature: 0.3,
+          system:
+            "Generate a short, descriptive title (3-8 words) for this conversation. Focus on the main topic or request. Return only the title, no quotes or extra text.",
+        });
+
+        await supabase.updateChatSessionTitle(
+          currentSessionId,
+          titleResponse.text.trim()
+        );
+      } catch (titleError) {
+        console.error("Error generating title:", titleError);
+        // Don't block the chat flow if title generation fails
+      }
     }
 
     // Fetch conversation history
@@ -212,30 +232,7 @@ Be conversational and supportive in your response.`,
       aiResponse
     );
 
-    // Generate title for new sessions after a few messages
-    const messageCount = rawMessages.length + 2; // +2 for the new user message and AI response
-    if (messageCount >= 4 && messageCount <= 6) {
-      try {
-        const titleResponse = await generateText({
-          model: openai("gpt-4o"),
-          messages: [
-            { role: "user", content: message },
-            { role: "assistant", content: aiResponse },
-          ],
-          maxTokens: 50,
-          temperature: 0.3,
-          system:
-            "Generate a short, descriptive title (3-8 words) for this conversation. Focus on the main topic or request. Return only the title, no quotes or extra text.",
-        });
-
-        await supabase.updateChatSessionTitle(
-          currentSessionId,
-          titleResponse.text.trim()
-        );
-      } catch (titleError) {
-        console.error("Error generating title:", titleError);
-      }
-    }
+    
 
     return NextResponse.json({
       message: aiResponse,

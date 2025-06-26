@@ -38,30 +38,33 @@ export default function AIChatPage() {
 
   const loadSessions = useCallback(async () => {
     try {
-      setLoading(true);
       const supabase = await createSPASassClient();
       const { data, error } = await supabase.getChatSessions(user!.id);
 
       if (error) throw error;
 
       setSessions(data || []);
-
-      if (!currentSessionId && data && data.length > 0) {
-        setCurrentSessionId(data[0].id);
-      }
+      return data;
     } catch (err) {
       console.error("Error loading sessions:", err);
       setError("Failed to load chat sessions");
-    } finally {
-      setLoading(false);
     }
-  }, [user, currentSessionId]);
+  }, [user]);
 
   useEffect(() => {
     if (user?.id) {
-      loadSessions();
+      const initialLoad = async () => {
+        setLoading(true);
+        const data = await loadSessions();
+        if (currentSessionId === null && data && data.length > 0) {
+          setCurrentSessionId(data[0].id);
+        }
+        setLoading(false);
+      };
+      initialLoad();
     }
-  }, [user?.id, loadSessions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   useEffect(() => {
     if (currentSessionId) {
@@ -90,35 +93,10 @@ export default function AIChatPage() {
     }
   };
 
-  const createNewSession = async () => {
-    try {
-      setError("");
-      const response = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          message: "Hello! I'd like to start a new conversation.",
-          createNewSession: true,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("API Error:", data);
-        throw new Error(
-          data.details || data.error || "Failed to create new session"
-        );
-      }
-
-      await loadSessions();
-      setCurrentSessionId(data.sessionId);
-    } catch (err) {
-      console.error("Error creating session:", err);
-      setError("Failed to create new session");
-    }
+  const createNewSession = () => {
+    setCurrentSessionId(null);
+    setMessages([]);
+    setError("");
   };
 
   const deleteSession = async (sessionId: string) => {
@@ -184,7 +162,9 @@ export default function AIChatPage() {
     } catch (err) {
       console.error("Error sending message:", err);
       setError(
-        `Failed to send message: ${err instanceof Error ? err.message : String(err)}`
+        `Failed to send message: ${
+          err instanceof Error ? err.message : String(err)
+        }`
       );
       setNewMessage(messageText);
     } finally {
@@ -218,7 +198,6 @@ export default function AIChatPage() {
         setNewMessage={setNewMessage}
         sendMessage={sendMessage}
         error={error}
-        onCreateNewSession={createNewSession}
       />
     </div>
   );
