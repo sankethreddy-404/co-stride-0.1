@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
   try {
     const { message, sessionId } = await request.json();
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = await createSSRSassClient(cookieStore);
 
     const {
@@ -316,11 +316,13 @@ async function executeSummarizePostsTool(
     }
 
     if (!posts || posts.length === 0) {
+      console.log(`No posts found for user ${userId} in the last ${period === "daily" ? "24 hours" : "7 days"}.`);
       return `No posts found in the last ${
         period === "daily" ? "24 hours" : "7 days"
       }. You haven't shared any progress updates during this period.`;
     }
 
+    console.log(`Found ${posts.length} posts for user ${userId} in the last ${period === "daily" ? "24 hours" : "7 days"}.`);
     // Prepare summary data
     const summaryData = {
       period,
