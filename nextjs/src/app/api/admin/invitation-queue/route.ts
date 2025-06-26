@@ -1,17 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createSSRSassClient } from '@/lib/supabase/server';
-import { invitationEmailQueue } from '@/lib/email/invitation-queue';
+import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createSSRSassClient } from "@/lib/supabase/server";
+import { invitationEmailQueue } from "@/lib/email/invitation-queue";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Verify admin access (you might want to implement proper admin authentication)
     const cookieStore = await cookies();
     const supabase = await createSSRSassClient(cookieStore);
-    const { data: { user }, error: authError } = await supabase.getSupabaseClient().auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.getSupabaseClient().auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Get queue status
@@ -23,23 +26,26 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error getting queue status:', error);
+    console.error("Error getting queue status:", error);
     return NextResponse.json(
-      { error: 'Failed to get queue status' },
+      { error: "Failed to get queue status" },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     // Verify admin access
     const cookieStore = await cookies();
     const supabase = await createSSRSassClient(cookieStore);
-    const { data: { user }, error: authError } = await supabase.getSupabaseClient().auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.getSupabaseClient().auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Clear failed invitations
@@ -51,9 +57,9 @@ export async function DELETE(request: NextRequest) {
       clearedCount,
     });
   } catch (error) {
-    console.error('Error clearing failed invitations:', error);
+    console.error("Error clearing failed invitations:", error);
     return NextResponse.json(
-      { error: 'Failed to clear failed invitations' },
+      { error: "Failed to clear failed invitations" },
       { status: 500 }
     );
   }

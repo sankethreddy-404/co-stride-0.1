@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useGlobal } from "@/lib/context/GlobalContext";
 import { createSPASassClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,7 +33,7 @@ interface ChatMessage {
   sender_type: "user" | "ai" | "tool_call" | "tool_output";
   message_content: string;
   tool_name?: string;
-  tool_args?: any;
+  tool_args?: Record<string, unknown>;
   tool_output?: string;
   created_at: string;
 }
@@ -49,11 +49,33 @@ export default function AIChatPage() {
   const [error, setError] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const loadSessions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const supabase = await createSPASassClient();
+      const { data, error } = await supabase.getChatSessions(user!.id);
+
+      if (error) throw error;
+
+      setSessions(data || []);
+
+      // Auto-select the most recent session if we don't have one selected
+      if (!currentSessionId && data && data.length > 0) {
+        setCurrentSessionId(data[0].id);
+      }
+    } catch (err) {
+      console.error("Error loading sessions:", err);
+      setError("Failed to load chat sessions");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, currentSessionId]);
+
   useEffect(() => {
     if (user?.id) {
       loadSessions();
     }
-  }, [user?.id]);
+  }, [user?.id, loadSessions]);
 
   useEffect(() => {
     if (currentSessionId) {
@@ -67,28 +89,6 @@ export default function AIChatPage() {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const loadSessions = async () => {
-    try {
-      setLoading(true);
-      const supabase = await createSPASassClient();
-      const { data, error } = await supabase.getChatSessions(user!.id);
-
-      if (error) throw error;
-
-      setSessions(data || []);
-      
-      // Auto-select the most recent session if we don't have one selected
-      if (!currentSessionId && data && data.length > 0) {
-        setCurrentSessionId(data[0].id);
-      }
-    } catch (err) {
-      console.error("Error loading sessions:", err);
-      setError("Failed to load chat sessions");
-    } finally {
-      setLoading(false);
-    }
   };
 
   const loadMessages = async (sessionId: string) => {
@@ -122,7 +122,9 @@ export default function AIChatPage() {
 
       if (!response.ok) {
         console.error("API Error:", data);
-        throw new Error(data.details || data.error || "Failed to create new session");
+        throw new Error(
+          data.details || data.error || "Failed to create new session"
+        );
       }
 
       // Reload sessions and select the new one
@@ -143,12 +145,14 @@ export default function AIChatPage() {
       if (error) throw error;
 
       // Remove from local state
-      setSessions(sessions.filter(s => s.id !== sessionId));
-      
+      setSessions(sessions.filter((s) => s.id !== sessionId));
+
       // If we deleted the current session, select another one or clear
       if (currentSessionId === sessionId) {
-        const remainingSessions = sessions.filter(s => s.id !== sessionId);
-        setCurrentSessionId(remainingSessions.length > 0 ? remainingSessions[0].id : null);
+        const remainingSessions = sessions.filter((s) => s.id !== sessionId);
+        setCurrentSessionId(
+          remainingSessions.length > 0 ? remainingSessions[0].id : null
+        );
         setMessages([]);
       }
     } catch (err) {
@@ -198,7 +202,9 @@ export default function AIChatPage() {
       }
     } catch (err) {
       console.error("Error sending message:", err);
-      setError(`Failed to send message: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Failed to send message: ${err instanceof Error ? err.message : String(err)}`
+      );
       setNewMessage(messageText); // Restore the message
     } finally {
       setSending(false);
@@ -212,7 +218,7 @@ export default function AIChatPage() {
     });
   };
 
-  const renderMessage = (message: ChatMessage, index: number) => {
+  const renderMessage = (message: ChatMessage) => {
     const isUser = message.sender_type === "user";
     const isToolCall = message.sender_type === "tool_call";
     const isToolOutput = message.sender_type === "tool_output";
@@ -232,8 +238,8 @@ export default function AIChatPage() {
               isUser
                 ? "bg-primary-600 text-white"
                 : isToolCall || isToolOutput
-                ? "bg-purple-600 text-white"
-                : "bg-gray-600 text-white"
+                  ? "bg-purple-600 text-white"
+                  : "bg-gray-600 text-white"
             }`}
           >
             {isUser ? (
@@ -250,10 +256,10 @@ export default function AIChatPage() {
               isUser
                 ? "bg-primary-600 text-white"
                 : isToolCall
-                ? "bg-purple-100 border border-purple-200"
-                : isToolOutput
-                ? "bg-yellow-50 border border-yellow-200"
-                : "bg-gray-100 border border-gray-200"
+                  ? "bg-purple-100 border border-purple-200"
+                  : isToolOutput
+                    ? "bg-yellow-50 border border-yellow-200"
+                    : "bg-gray-100 border border-gray-200"
             }`}
           >
             <div className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -314,14 +320,17 @@ export default function AIChatPage() {
                 New
               </Button>
             </div>
-            
+
             <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <BarChart3 className="h-4 w-4 text-blue-600" />
-                <span className="font-medium text-blue-800">Available Tool:</span>
+                <span className="font-medium text-blue-800">
+                  Available Tool:
+                </span>
               </div>
               <p className="text-blue-700">
-                <strong>Summarize Posts</strong> - Ask me to summarize your recent work and progress updates from your workspaces.
+                <strong>Summarize Posts</strong> - Ask me to summarize your
+                recent work and progress updates from your workspaces.
               </p>
             </div>
           </div>
@@ -410,9 +419,7 @@ export default function AIChatPage() {
                   </div>
                 ) : (
                   <div>
-                    {messages.map((message, index) =>
-                      renderMessage(message, index)
-                    )}
+                    {messages.map((message) => renderMessage(message))}
                     {sending && (
                       <div className="flex justify-start mb-4">
                         <div className="flex gap-3">
