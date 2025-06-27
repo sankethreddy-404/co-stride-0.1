@@ -76,25 +76,47 @@ export async function POST(request: NextRequest) {
       await supabase.getChatMessages(currentSessionId);
     if (messagesError) throw messagesError;
 
-    const conversationHistory: CoreMessage[] = rawMessages.map((msg) => {
-      const role = msg.sender_type === "ai" ? "assistant" : msg.sender_type;
-      let tool_calls;
-      if (msg.sender_type === "tool_call" && msg.tool_name && msg.tool_args) {
-        tool_calls = [
-          {
-            type: "tool-call",
-            id: msg.id,
-            toolName: msg.tool_name,
-            args: msg.tool_args,
-          },
-        ];
+    const conversationHistory: CoreMessage[] = [];
+    for (let i = 0; i < rawMessages.length; i++) {
+      const msg = rawMessages[i];
+
+      if (msg.sender_type === 'user') {
+        conversationHistory.push({ role: 'user', content: msg.message_content });
+        continue;
       }
-      return {
-        role,
-        content: msg.message_content,
-        tool_calls,
-      };
-    });
+
+      if (msg.sender_type === 'ai') {
+        conversationHistory.push({ role: 'assistant', content: msg.message_content });
+        continue;
+      }
+
+      if (msg.sender_type === 'tool_call') {
+        const nextMsg = rawMessages[i + 1];
+        if (nextMsg && nextMsg.sender_type === 'tool_output' && nextMsg.tool_name === msg.tool_name) {
+          conversationHistory.push({
+            role: 'assistant',
+            content: msg.message_content || '',
+            toolCalls: [{
+              id: msg.id,
+              type: 'tool-call',
+              toolName: msg.tool_name,
+              args: msg.tool_args,
+            }]
+          });
+          conversationHistory.push({
+            role: 'tool',
+            content: [{
+              type: 'tool-result',
+              toolCallId: msg.id,
+              result: nextMsg.message_content
+            }],
+          });
+          i++; // Skip next message as it's already processed
+        }
+        // If no matching tool_output, skip the tool_call to prevent errors
+        continue;
+      }
+    }
 
     // Save user message
     await supabase.createChatMessage(
@@ -147,9 +169,11 @@ Be conversational, helpful, and provide actionable insights based on the data.`,
     const toolOutputs: string[] = [];
 
     // Execute tool calls if any
+    console.log("Checking for tool calls. toolCalls:", toolCalls);
     if (toolCalls && toolCalls.length > 0) {
+      console.log("Tool calls found. Entering tool execution block.");
       for (const toolCall of toolCalls) {
-        if (toolCall.toolName === "summarizePosts") {
+        if (toolCall.toolName === "summarize") {
           // Save tool call message
           await supabase.createChatMessage(
             currentSessionId,
@@ -163,6 +187,7 @@ Be conversational, helpful, and provide actionable insights based on the data.`,
           );
 
           // Execute the tool
+          console.log(`Executing tool: ${toolCall.toolName} with args: ${JSON.stringify(toolCall.args)}`);
           const toolOutput = await executeSummarizePostsTool(
             toolCall.args as {
               period: "daily" | "weekly";
@@ -173,6 +198,7 @@ Be conversational, helpful, and provide actionable insights based on the data.`,
           );
 
           toolOutputs.push(toolOutput);
+          console.log("Tool outputs after execution:", toolOutputs);
 
           // Save tool output message
           await supabase.createChatMessage(
@@ -221,6 +247,7 @@ Be conversational and supportive in your response.`,
         });
 
         aiResponse = finalResponse.text;
+        console.log("Final AI response after processing tool outputs:", aiResponse);
       }
     }
 
@@ -278,7 +305,11 @@ async function executeSummarizePostsTool(
     }
 
     // Get user's workspaces
-    const { data: workspaces } = await supabase.getMyWorkspaces();
+    const { data: workspaces, error: workspacesError } = await supabase.getMyWorkspaces();
+    if (workspacesError) {
+      console.error("Error fetching workspaces:", workspacesError);
+      return "Error fetching workspaces. Please check the logs for details.";
+    }
     const workspaceIds = workspaces?.map((w: Workspace) => w.id) || [];
 
     if (workspaceIds.length === 0) {
@@ -294,12 +325,11 @@ async function executeSummarizePostsTool(
         id,
         text_content,
         created_at,
-        updated_at,
         user_id,
         workspace_id,
-        post_attachments!inner(*),
-        ratings!inner(*),
-        workspace_comments!inner(*)
+        post_attachments!left(*),
+        ratings!left(*),
+        workspace_comments!left(*)
       `
       )
       .eq("user_id", userId)
@@ -388,6 +418,8 @@ async function executeSummarizePostsTool(
       )}`,
       maxTokens: 500,
     });
+
+    console.log("Summary response from AI model:", summaryResponse.text);
 
     return summaryResponse.text;
   } catch (error) {

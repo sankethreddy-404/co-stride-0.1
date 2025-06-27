@@ -26,8 +26,8 @@ export function SessionList({
   onDeleteSession,
 }: SessionListProps) {
   return (
-    <div className="w-80 flex flex-col">
-      <Card className="flex-1 flex flex-col">
+    <div className="w-80 flex flex-col h-full">
+      <Card className="flex-1 flex flex-col min-h-0">
         <div className="p-4 border-b">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
